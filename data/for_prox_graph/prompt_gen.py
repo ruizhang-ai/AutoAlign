@@ -10,5 +10,5 @@ promt_template = f"Now you are an expert in linguistics and knowledge graphs. I 
 with open(f"prompt.txt", "w") as f:
     f.write(promt_template)
 
-print(f"Please use the prompt in prompt.txt to generate the Aligned data")
+print(f"Please use the prompt in prompt.txt to generate the Aligned data. Note that LLMs may give different results due to the nature of generative model.")
 

@@ -1,13 +1,13 @@
 
-## Mandatory:
+## Create the meta proximity graph without entity types aligned:
 
-Use KB_entity_type.ipynb to obtain the entity type sets and the meta proximity graph without entity types aligned.
+1. Use KB_entity_type.ipynb to obtain the entity type sets and the meta proximity graph without entity types aligned.
 
 
-## Optional:
+## Match the entity types using LLMs:
 
-Use `python prompy_gen.py` to generate the prompt for LLMs to align the types between two KGs.
+1. Use `python prompt_gen.py` to generate the prompt for LLMs to align the types between two KGs.
 
-Obtain the aligned type pairs from any LLM (e.g., Claude) and store the aligned type pairs in `matched_types.txt`.
+2. Obtain the aligned type pairs from any LLM (e.g., Claude) and store the aligned type pairs in `matched_types.txt`.
 
-Replace the types in the meta proximity graph with the aligned types using `python match_type.py`.
+3. Replace the types in the meta proximity graph with the aligned types using `python match_type.py`.

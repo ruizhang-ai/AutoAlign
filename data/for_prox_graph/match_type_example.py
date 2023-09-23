@@ -1,4 +1,5 @@
 import pickle
+import pdb
 align_dict = {}
 with open('matched_types.txt', 'r') as f:
     for line in f:
@@ -7,6 +8,7 @@ with open('matched_types.txt', 'r') as f:
 
 meta_prox_graph = 'yago_pred_prox_graph'
 aligned_prox_graph = []
+
 with open(f"{meta_prox_graph}.txt", 'r') as f:
     for line in f:
         line = line.strip().split('\t')
@@ -18,5 +20,5 @@ with open(f"{meta_prox_graph}.txt", 'r') as f:
         aligned_prox_graph.append(line)
 
 
-pickle.dump(aligned_prox_graph, open(f"{meta_prox_graph}.pickle", 'wb'))
+pickle.dump(aligned_prox_graph, open(f"{meta_prox_graph}_matched.pickle", 'wb'))
 
