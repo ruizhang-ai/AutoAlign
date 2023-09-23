@@ -23,9 +23,7 @@ b_ = translations.lgettext
 
 ### Combine two KG
 dataset_name = 'yago'
-path = 'DY-NB-current/'
-dataset_name = 'wd'
-path = 'DW-NB/'
+path = 'DY-NB/'
 lgd_filename = '../data/'+path+dataset_name+'.ttl'
 dbp_filename = '../data/'+path+'dbp_'+dataset_name+'.ttl'
 predicate_graph = cPickle.load(open('../data/'+path+dataset_name+'_pred_prox_graph.pickle', 'rb'))
