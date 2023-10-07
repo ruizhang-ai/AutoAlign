@@ -45,6 +45,14 @@ This repository contains the following main contents:
 python AutoAlign.py
 ```
 
+## Use your own datasets
+
+To use your own datasets:
+
+1. Prepare the KG files (each KG in one file) in Turtle（Terse RDF Triple Language）format (as the .ttl files in ./data/DY-NB/ folder).
+2. Follow the instructions in ./data/for_prox_graph/ to generate the proximity graph.
+3. Run on your own datasets in AutoAlign.py
+
 ## Cite our paper
 
 Please credit our work by citing the following paper:
