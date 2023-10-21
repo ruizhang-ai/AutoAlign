@@ -28,6 +28,7 @@ lgd_filename = '../data/'+path+dataset_name+'.ttl'
 dbp_filename = '../data/'+path+'dbp_'+dataset_name+'.ttl'
 predicate_graph = cPickle.load(open('../data/'+path+dataset_name+'_pred_prox_graph.pickle', 'rb'))
 map_file = '../data/'+path+'mapping_'+dataset_name+'.ttl'
+aggregation = 'W'
 
 graph = Graph()
 graph.parse(location=lgd_filename, format='nt')
@@ -727,21 +728,57 @@ with tfgraph.as_default():
     
     
     # PREDICATE PROXIMITY TRIPLES #
-    pp_pos_h_e = tf.nn.embedding_lookup(pp_ent_embeddings, pos_h)
-    pp_pos_t_e = tf.nn.embedding_lookup(pp_ent_embeddings, pos_t)
-    pp_pos_r_e = tf.nn.embedding_lookup(ent_rel_embeddings, pos_r)
-    pp_neg_h_e = tf.nn.embedding_lookup(pp_ent_embeddings, neg_h)
-    pp_neg_t_e = tf.nn.embedding_lookup(pp_ent_embeddings, neg_t)
-    pp_neg_r_e = tf.nn.embedding_lookup(ent_rel_embeddings, neg_r)
-    
-    pp_pos = tf.reduce_sum(abs(pp_pos_h_e + pp_pos_r_e - pp_pos_t_e), 1, keep_dims = True)
-    pp_neg = tf.reduce_sum(abs(pp_neg_h_e + pp_neg_r_e - pp_neg_t_e), 1, keep_dims = True)
-    #pp_learning_rate = 0.0001 # LGD/GEO
-    pp_learning_rate = 0.0001 # YAGO
-    pp_opt_vars_ent = [v for v in tf.trainable_variables() if v.name.startswith("proximity_triple")]
-    #pp_loss = tf.reduce_sum(tf.maximum(pp_pos - pp_neg + 1, 0)) # LGD/GEO
-    pp_loss = tf.reduce_sum(tf.maximum(pp_pos - pp_neg + 10, 0)) # YAGO
-    pp_optimizer = tf.train.AdamOptimizer(pp_learning_rate).minimize(pp_loss, var_list=pp_opt_vars_ent)
+    if aggregation == 'W':
+        pp_pos_h_e = tf.nn.embedding_lookup(pp_ent_embeddings, pos_h)
+        pp_pos_t_e = tf.nn.embedding_lookup(pp_ent_embeddings, pos_t)
+        pp_pos_r_e = tf.nn.embedding_lookup(ent_rel_embeddings, pos_r)
+        pp_neg_h_e = tf.nn.embedding_lookup(pp_ent_embeddings, neg_h)
+        pp_neg_t_e = tf.nn.embedding_lookup(pp_ent_embeddings, neg_t)
+        pp_neg_r_e = tf.nn.embedding_lookup(ent_rel_embeddings, neg_r)
+        pp_pos = tf.reduce_sum(abs(pp_pos_h_e + pp_pos_r_e - pp_pos_t_e), 1, keep_dims = True)
+        pp_neg = tf.reduce_sum(abs(pp_neg_h_e + pp_neg_r_e - pp_neg_t_e), 1, keep_dims = True)
+        #pp_learning_rate = 0.0001 # LGD/GEO
+        pp_learning_rate = 0.0001 # YAGO
+        pp_opt_vars_ent = [v for v in tf.trainable_variables() if v.name.startswith("proximity_triple")]
+        #pp_loss = tf.reduce_sum(tf.maximum(pp_pos - pp_neg + 1, 0)) # LGD/GEO
+        pp_loss = tf.reduce_sum(tf.maximum(pp_pos - pp_neg + 10, 0)) # YAGO
+        pp_optimizer = tf.train.AdamOptimizer(pp_learning_rate).minimize(pp_loss, var_list=pp_opt_vars_ent)
+    elif aggregation == 'A':
+        # pos_h mapping from domain_vocab, 
+        pp_pos_h_e = tf.nn.embedding_lookup(pp_ent_embeddings, pos_h_type) # [b, 4, hidden_size]
+        # tf.matmul() only for 2 dims
+        pp_pos_h_e =  tf.reshape(pp_pos_h_e, [-1, hidden_size])  # [b*4, hid]
+        tmp = tf.matmul(pp_pos_h_e, pp_w_embeddings)  # [b*4, hid]
+        tmp = tf.reshape(tmp, [-1, 4, hidden_size]) 
+        att_w = tf.nn.softmax(tf.reduce_sum(tmp, -1, keep_dims=True), axis=-1) # [b, 4, 1]
+        pp_pos_h_e = tf.reduce_sum(tf.multiply(att_w, tmp), axis=1) # [b, hidden_size]
+
+        # pp_pos_t_e
+        pp_pos_t_e = tf.nn.embedding_lookup(pp_ent_embeddings, pos_t_type)
+        tmp = tf.reshape(tf.matmul(tf.reshape(pp_pos_t_e, [-1, hidden_size]), pp_w_embeddings), [-1, 4, hidden_size])
+        att_w = tf.nn.softmax(tf.reduce_sum(tmp, -1, keep_dims=True), axis=-1) # [b, 4, 1]
+        pp_pos_t_e = tf.reduce_sum(tf.multiply(att_w, tmp), axis=1) # [b, hidden_size]
+        
+        # pp_neg_h_e
+        pp_neg_h_e = tf.nn.embedding_lookup(pp_ent_embeddings, neg_h_type)
+        tmp = tf.reshape(tf.matmul(tf.reshape(pp_neg_h_e, [-1, hidden_size]), pp_w_embeddings), [-1, 4, hidden_size])
+        att_w = tf.nn.softmax(tf.reduce_sum(tmp, -1, keep_dims=True), axis=-1) # [b, 4, 1]
+        pp_neg_h_e = tf.reduce_sum(tf.multiply(att_w, tmp), axis=1) # [b, hidden_size]
+
+        # pp_neg_t_e
+        pp_neg_t_e = tf.nn.embedding_lookup(pp_ent_embeddings, neg_t_type)
+        tmp = tf.reshape(tf.matmul(tf.reshape(pp_neg_t_e, [-1, hidden_size]), pp_w_embeddings), [-1, 4, hidden_size])
+        att_w = tf.nn.softmax(tf.reduce_sum(tmp, -1, keep_dims=True), axis=-1) # [b, 4, 1]
+        pp_neg_t_e = tf.reduce_sum(tf.multiply(att_w, tmp), axis=1) # [b, hidden_size]
+
+        pp_pos = tf.reduce_sum(abs(pp_pos_h_e + pp_pos_r_e - pp_pos_t_e), 1, keep_dims = True)
+        pp_neg = tf.reduce_sum(abs(pp_neg_h_e + pp_neg_r_e - pp_neg_t_e), 1, keep_dims = True)
+        #pp_learning_rate = 0.0001 # LGD/GEO
+        pp_learning_rate = 0.0001 # YAGO
+        pp_opt_vars_ent = [v for v in tf.trainable_variables() if v.name.startswith("proximity_triple")]
+        #pp_loss = tf.reduce_sum(tf.maximum(pp_pos - pp_neg + 1, 0)) # LGD/GEO
+        pp_loss = tf.reduce_sum(tf.maximum(pp_pos - pp_neg + 10, 0)) # YAGO
+        pp_optimizer = tf.train.AdamOptimizer(pp_learning_rate).minimize(pp_loss, var_list=pp_opt_vars_ent)
     ########################
     
     
