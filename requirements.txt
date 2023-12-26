@@ -1,0 +1,4 @@
+kitchen==1.2.6
+numpy==1.19.2
+rdflib==5.0.0
+tensorflow_gpu==1.12.0

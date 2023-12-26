@@ -40,6 +40,27 @@ This repository contains the following main contents:
 ```
 
 ## Run our code
+Python >= 3.6.13
+
+Need to set up GPU environment.
+
+Download the corresponding versions of CUDA Toolkit and cuDNN.
+
+CUDA version: 11.7
+
+1. Install cudatoolkit and cudnn:
+
+```
+conda install cudatoolkit==9.0 cudnn==7.1.2
+```
+
+2. Install the required packages:
+
+```
+pip install -r requirements.txt
+```
+
+3. Run the code
 
 ```
 python AutoAlign.py
