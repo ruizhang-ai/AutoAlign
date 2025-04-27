@@ -700,6 +700,11 @@ with tfgraph.as_default():
     neg_r_trans = tf.placeholder(tf.int32, [None])
     neg_c = tf.placeholder(tf.int32, [None, literal_len])
     neg_pred_weight = tf.placeholder(tf.float32, [None,1], name='neg_pred_weight')
+
+    pos_h_type = tf.placeholder(tf.int32, [None,4]) # [b, 4]
+    pos_t_type = tf.placeholder(tf.int32, [None,4]) # [b, 4]
+    neg_h_type = tf.placeholder(tf.int32, [None,4]) # [b, 4]
+    neg_t_type = tf.placeholder(tf.int32, [None,4]) # [b, 4]
     
     type_data = tf.placeholder(tf.int32, [1])
     type_trans = tf.placeholder(tf.int32, [1])
@@ -712,6 +717,7 @@ with tfgraph.as_default():
     pp_ent_embeddings = tf.get_variable(name = "proximity_triple_ent_embedding", shape = [ppEntSize, hidden_size], initializer = tf.contrib.layers.xavier_initializer(uniform = False))
     #atr_rel_embeddings = tf.get_variable(name = "attribute_triple_pred_embedding", shape = [predSize, hidden_size], initializer = tf.contrib.layers.xavier_initializer(uniform = False))
     char_embeddings = tf.get_variable(name = "attribute_triple_char_embedding", shape = [charSize, hidden_size], initializer = tf.contrib.layers.xavier_initializer(uniform = False))
+    pp_w_embeddings = tf.get_variable(name = "proximity_triple_weight_embedding", shape = [hidden_size, hidden_size], initializer = tf.contrib.layers.xavier_initializer(uniform = False))
     
     ent_indices = tf.concat([pos_h, pos_t, neg_h, neg_t], 0)
     ent_indices = tf.reshape(ent_indices,[-1,1])
@@ -752,6 +758,8 @@ with tfgraph.as_default():
         tmp = tf.reshape(tmp, [-1, 4, hidden_size]) 
         att_w = tf.nn.softmax(tf.reduce_sum(tmp, -1, keep_dims=True), axis=-1) # [b, 4, 1]
         pp_pos_h_e = tf.reduce_sum(tf.multiply(att_w, tmp), axis=1) # [b, hidden_size]
+        pp_pos_r_e = tf.nn.embedding_lookup(ent_rel_embeddings, pos_r)
+        pp_neg_r_e = tf.nn.embedding_lookup(ent_rel_embeddings, neg_r)
 
         # pp_pos_t_e
         pp_pos_t_e = tf.nn.embedding_lookup(pp_ent_embeddings, pos_t_type)
@@ -939,7 +947,9 @@ def metric(y_true, y_pred, answer_vocab, k=10):
 
 
 def run(graph, totalEpoch):
+    writer = open('log.txt', 'w')
     with tf.Session(graph=graph) as session:
+        writer_tb=tf.summary.FileWriter('./tensorboard_study', session.graph)
         init.run()
         
         for epoch in range(totalEpoch):
